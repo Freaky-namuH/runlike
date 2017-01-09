@@ -11,11 +11,12 @@ def die(message):
 
 
 class Inspector(object):
-    def __init__(self, container, no_name, pretty, interative_tty, extra_opts):
+    def __init__(self, container, no_name, pretty, cmd, interative_tty, extra_opts):
         self.container = container
         self.no_name = no_name
         self.output = ""
         self.pretty = pretty
+        self.cmd = cmd
         self.interative_tty = interative_tty
         self.extra_opts = extra_opts
 
@@ -117,7 +118,10 @@ class Inspector(object):
         parameters.append(image)
 
         command = []
-        cmd = self.get_fact("Config.Cmd")
+        if not self.cmd:
+            cmd = self.get_fact("Config.Cmd")
+        else:
+            cmd = [self.cmd]
         if cmd:
             command = " ".join(cmd)
         parameters.append(command)
@@ -135,12 +139,13 @@ class Inspector(object):
 @click.argument("container")
 @click.option("-n", "--no-name", is_flag=True, help="Do not include container name in output")
 @click.option("-p", "--pretty", is_flag=True)
+@click.option("-c", "--cmd")
 @click.option("-i", "--interative-tty", is_flag=True)
 @click.option("-e", "--extra-opts", multiple=True)
-def cli(container, no_name, pretty, interative_tty, extra_opts):
+def cli(container, no_name, pretty, cmd, interative_tty, extra_opts):
 
     # TODO: -i, -t, -d as added options that override the inspection
-    ins = Inspector(container, no_name, pretty, interative_tty, extra_opts)
+    ins = Inspector(container, no_name, pretty, cmd, interative_tty, extra_opts)
     ins.inspect()
     print ins.format_cli()
 
