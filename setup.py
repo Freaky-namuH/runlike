@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='runlike',
-    version='0.1.2',
+    version='0.1.2.1',
     py_modules=['runlike'],
     description='Reverse-engineer docker run command line arguments based on running containers',
     author='Assaf Lavie',
