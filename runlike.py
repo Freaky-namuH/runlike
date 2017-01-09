@@ -11,11 +11,13 @@ def die(message):
 
 
 class Inspector(object):
-    def __init__(self, container, no_name, pretty):
+    def __init__(self, container, no_name, pretty, interative_tty, extra_opts):
         self.container = container
         self.no_name = no_name
         self.output = ""
         self.pretty = pretty
+        self.interative_tty = interative_tty
+        self.extra_opts = extra_opts
 
     def inspect(self):
         try:
@@ -35,12 +37,26 @@ class Inspector(object):
             value = value[p]
         return value
 
+    def extra_options(self):
+        if self.extra_opts:
+            for extra_opt in self.extra_opts:
+                self.options.append(extra_opt)
+
     def multi_option(self, path, option):
         values = self.get_fact(path)
         if values:
             for val in values:
                 self.options.append('--%s="%s"' % (option, val))
 
+    def env_options(self):
+        values = self.get_fact("Config.Env")
+        if values:
+            for val in values:
+                idx_equals = val.index("=", 0)
+                env_name = val[:idx_equals]
+                env_value = val[idx_equals + 1:]
+
+                self.options.append("-e %s=\"%s\"" % (env_name, env_value))
 
     def parse_ports(self):
         ports = self.get_fact("NetworkSettings.Ports")
@@ -81,14 +97,15 @@ class Inspector(object):
         if not self.no_name:
             self.options.append("--name=%s" % name)
 
-        self.multi_option("Config.Env", "env")
+        self.extra_options()
+        self.env_options()
         self.multi_option("HostConfig.Binds", "volume")
         self.multi_option("HostConfig.VolumesFrom", "volumes-from")
         self.parse_ports()
         self.parse_links()
 
         stdout_attached = self.get_fact("Config.AttachStdout")
-        if not stdout_attached:
+        if not self.interative_tty and not stdout_attached:
             self.options.append("--detach=true")
 
         if self.get_fact("Config.Tty"):
@@ -116,15 +133,17 @@ class Inspector(object):
 
 @click.command(help="Shows command line necessary to run copy of existing Docker container.")
 @click.argument("container")
-@click.option("--no-name", is_flag=True, help="Do not include container name in output")
+@click.option("-n", "--no-name", is_flag=True, help="Do not include container name in output")
 @click.option("-p", "--pretty", is_flag=True)
-def cli(container, no_name, pretty):
+@click.option("-i", "--interative-tty", is_flag=True)
+@click.option("-e", "--extra-opts", multiple=True)
+def cli(container, no_name, pretty, interative_tty, extra_opts):
 
     # TODO: -i, -t, -d as added options that override the inspection
-    ins = Inspector(container, no_name, pretty)
+    ins = Inspector(container, no_name, pretty, interative_tty, extra_opts)
     ins.inspect()
     print ins.format_cli()
-    
+
 
 
 def main():
