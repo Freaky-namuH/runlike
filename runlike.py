@@ -78,13 +78,14 @@ class Inspector(object):
 
 
     def parse_links(self):
+        container_name = self.get_fact("Name")
         links = self.get_fact("HostConfig.Links")
         link_options = set()
         if links is not None:
             for link in links:
                 src, dst = link.split(":")
-                dst = dst.split("/")[1]
-                link_options.add('--link %s:%s' % (src, dst))
+                dst = dst.split("/")[2]
+                link_options.add('--link %s:%s' % (src[1:], dst))
         self.options += list(link_options)
 
 
